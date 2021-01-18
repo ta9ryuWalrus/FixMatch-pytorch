@@ -232,7 +232,7 @@ class CIFAR10SSL(datasets.CIFAR10):
 
 class CassavaSSL(Cassava):
     def __init__(self, indexs, transform=None):
-        super().__init__(self, train=True, transform=transform)
+        super().__init__(self, transform=transform, train=True)
 
         if indexs is not None:
             self.data = self.data[indexs]
