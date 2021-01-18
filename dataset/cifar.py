@@ -3,10 +3,13 @@ import math
 
 import numpy as np
 from PIL import Image
+import pandas as pd
 from torchvision import datasets
 from torchvision import transforms
+from torch.utils.data import Dataset
+from sklearn.model_selection import train_test_split
 
-from .randaugment import RandAugmentMC
+from .randaugment import RandAugmentMC, RandAugmentMC_Cassava
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +86,59 @@ def get_cifar100(args, root):
 
     return train_labeled_dataset, train_unlabeled_dataset, test_dataset
 
+def get_cassava(args, root=None):
+    transform_labeled = transforms.Compose([
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomCrop(size=600,
+                              padding=int(600*0.125),
+                              padding_mode='reflect'),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=normal_mean, std=normal_std)
+    ])
+
+    transform_val = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(mean=normal_mean, std=normal_std)
+    ])
+
+    base_dataset = Cassava(train=True)
+
+    train_labeled_idxs, train_unlabeled_idxs = x_u_split(args, base_dataset.targets)
+
+    train_labeled_dataset = CassavaSSL(train_labeled_idxs, transform=transform_labeled)
+    train_unlabeled_dataset = CassavaSSL(train_unlabeled_idxs, transform=CassavaFixMatch(mean=normal_mean, std=normal_std))
+    test_dataset = Cassava(train=False, transform=transform_val)
+    return train_labeled_dataset, train_unlabeled_dataset, test_dataset
+
+class Cassava(Dataset):
+    def __init__(self, train=True, transform=None):
+        # dfは全部で21397件
+        df = pd.read_csv('/content/drive/MyDrive/NSSOL/FixMatch-PyTorch/dataset/cassava-leaf-disease-classification/train.csv')
+        train_df, test_df = train_test_split(df, test_size=0.3, stratify=df['label'], random_state=1)
+        if train=True:
+            self.data = np.array(train_df['image_id'])
+            self.targets = np.array(train_df['label'])
+        else:
+            self.data = np.array(test_df['image_id'])
+            self.targets = np.array(test_df['label'])
+        self.transform = transform
+    
+    def __getitem__(self, index):
+        img_path = '/content/drive/MyDrive/NSSOL/FixMatch-PyTorch/dataset/cassava-leaf-disease-classification/train_images/' + str(self.data[index])
+        label = self.targets[index]
+
+        img = Image.open(img_path)
+        img = img.resize((600, 600))
+
+        if self.transform:
+            img = self.transform(img)
+        
+        return img, label
+
+    def __len__(self):
+        return len(self.targets)
+
+
 
 def x_u_split(args, labels):
     label_per_class = args.num_labeled // args.num_classes
@@ -127,6 +183,28 @@ class TransformFixMatch(object):
         strong = self.strong(x)
         return self.normalize(weak), self.normalize(strong)
 
+class CassavaFixMatch(object):
+    def __init__(self, mean, std):
+        self.weak = transforms.Compose([
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomCrop(size=600,
+                                  padding=int(600*0.125),
+                                  padding_mode='reflect')])
+        self.strong = transforms.Compose([
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomCrop(size=600,
+                                  padding=int(600*0.125),
+                                  padding_mode='reflect'),
+            RandAugmentMC_Cassava(n=2, m=10)])
+        self.normalize = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=mean, std=std)])
+
+    def __call__(self, x):
+        weak = self.weak(x)
+        strong = self.strong(x)
+        return self.normalize(weak), self.normalize(strong)
+
 
 class CIFAR10SSL(datasets.CIFAR10):
     def __init__(self, root, indexs, train=True,
@@ -152,6 +230,13 @@ class CIFAR10SSL(datasets.CIFAR10):
 
         return img, target
 
+class CassavaSSL(Cassava):
+    def __init__(self, indexs, train=True, transform=None):
+        super().__init__(self, train=train, transform=transform)
+
+        if indexs is not None:
+            self.data = self.data[indexs]
+            self.targets = self.targets[indexs]
 
 class CIFAR100SSL(datasets.CIFAR100):
     def __init__(self, root, indexs, train=True,
@@ -179,4 +264,5 @@ class CIFAR100SSL(datasets.CIFAR100):
 
 
 DATASET_GETTERS = {'cifar10': get_cifar10,
-                   'cifar100': get_cifar100}
+                   'cifar100': get_cifar100
+                   'cassava': get_cassava}
