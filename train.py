@@ -141,6 +141,9 @@ def main():
                                          depth=args.model_depth,
                                          width=args.model_width,
                                          num_classes=args.num_classes)
+        elif args.arch == 'resnet':
+            import models.resnet as models
+            model = models.resnet18(num_classes=args.num_classes)
         logger.info("Total params: {:.2f}M".format(
             sum(p.numel() for p in model.parameters())/1e6))
         return model
@@ -198,6 +201,9 @@ def main():
             args.model_cardinality = 8
             args.model_depth = 29
             args.model_width = 64
+    
+    elif args.dataset == 'cassava':
+        args.num_classes = 5
 
     labeled_dataset, unlabeled_dataset, test_dataset = DATASET_GETTERS[args.dataset](
         args, './data')

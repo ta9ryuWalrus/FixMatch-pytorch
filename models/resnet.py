@@ -1,3 +1,4 @@
+#SimCLRの実装はtfの公式実装通りっぽいので、PyTrochの公式実装を使えば同じアーキテクチャになるはず
 import torch
 from torch import Tensor
 import torch.nn as nn
