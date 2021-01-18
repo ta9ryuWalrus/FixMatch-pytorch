@@ -231,8 +231,8 @@ class CIFAR10SSL(datasets.CIFAR10):
         return img, target
 
 class CassavaSSL(Cassava):
-    def __init__(self, indexs, train=True, transform=None):
-        super().__init__(self, train=train, transform=transform)
+    def __init__(self, indexs, transform=None):
+        super().__init__(self, train=True, transform=transform)
 
         if indexs is not None:
             self.data = self.data[indexs]
