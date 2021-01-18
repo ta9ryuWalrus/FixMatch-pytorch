@@ -103,7 +103,7 @@ def get_cassava(args, root=None):
 
     base_dataset = Cassava(train=True)
 
-    train_labeled_idxs, train_unlabeled_idxs = x_u_split(args, base_dataset.targets)
+    train_labeled_idxs, train_unlabeled_idxs = x_u_split_cassava(args, base_dataset.targets)
 
     train_labeled_dataset = CassavaSSL(train_labeled_idxs, transform=transform_labeled)
     train_unlabeled_dataset = CassavaSSL(train_unlabeled_idxs, transform=CassavaFixMatch(mean=normal_mean, std=normal_std))
@@ -157,6 +157,13 @@ def x_u_split(args, labels):
         num_expand_x = math.ceil(
             args.batch_size * args.eval_step / args.num_labeled)
         labeled_idx = np.hstack([labeled_idx for _ in range(num_expand_x)])
+    np.random.shuffle(labeled_idx)
+    return labeled_idx, unlabeled_idx
+
+def x_u_split_cassava(args, labels):
+    # unlabeled data: all data (https://github.com/kekmodel/FixMatch-pytorch/issues/10)
+    unlabeled_idx = np.array(range(len(labels)))
+    labeled_idx, _ = train_test_split(labels, train_size=0.1, random_state=1)
     np.random.shuffle(labeled_idx)
     return labeled_idx, unlabeled_idx
 
