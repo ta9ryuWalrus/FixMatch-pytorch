@@ -115,7 +115,7 @@ class Cassava(Dataset):
         # dfは全部で21397件
         df = pd.read_csv('/content/drive/MyDrive/NSSOL/FixMatch-PyTorch/dataset/cassava-leaf-disease-classification/train.csv')
         train_df, test_df = train_test_split(df, test_size=0.3, stratify=df['label'], random_state=1)
-        if train=True:
+        if train:
             self.data = np.array(train_df['image_id'])
             self.targets = np.array(train_df['label'])
         else:
