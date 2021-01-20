@@ -78,8 +78,8 @@ def main():
                         help='number of labeled data')
     parser.add_argument("--expand-labels", action="store_true",
                         help="expand labels to fit eval steps")
-    parser.add_argument('--arch', default='wideresnet', type=str,
-                        choices=['wideresnet', 'resnet'],
+    parser.add_argument('--arch', default='resnet', type=str,
+                        choices=['wideresnet', 'resnet', 'efficientnet'],
                         help='dataset name')
     parser.add_argument('--total-steps', default=2**20, type=int,
                         help='number of total steps to run')
@@ -138,6 +138,9 @@ def main():
         elif args.arch == 'resnet':
             import models.resnet as models
             model = models.resnet18(num_classes=args.num_classes)
+        elif args.arch == 'efficientnet':
+            from efficientnet_pytorch import EfficientNet
+            model = EfficientNet.from_name('efficientnet-b0', image_size=[400, 400], num_classes=args.num_classes)
         logger.info("Total params: {:.2f}M".format(
             sum(p.numel() for p in model.parameters())/1e6))
         return model
@@ -299,7 +302,7 @@ def train(args, labeled_trainloader, unlabeled_trainloader, test_loader,
         if not args.no_progress:
             p_bar = tqdm(range(args.eval_step),
                          disable=args.local_rank not in [-1, 0])
-        for batch_idx in range(args.eval_step):
+        for batch_idx in range(args.eval_step):# これバッチサイズに決まらず一定？ということはバッチサイズによっては使われてないデータもある？
             try:
                 inputs_x, targets_x = labeled_iter.next()
             except:
@@ -381,7 +384,7 @@ def train(args, labeled_trainloader, unlabeled_trainloader, test_loader,
             writer.add_scalar('train/1.train_loss', losses.avg, epoch)
             writer.add_scalar('train/2.train_loss_x', losses_x.avg, epoch)
             writer.add_scalar('train/3.train_loss_u', losses_u.avg, epoch)
-            writer.add_scalar('train/4.mask', mask_probs.avg, epoch)
+            writer.add_scalar('train/4.mask', mask_probs.avg, epoch) # maskはpseudo labelの確信度がthresholdを超えた割合
             writer.add_scalar('test/1.test_acc', test_acc, epoch)
             writer.add_scalar('test/2.test_loss', test_loss, epoch)
 
