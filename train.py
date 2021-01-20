@@ -72,14 +72,14 @@ def main():
     parser.add_argument('--num-workers', type=int, default=4,
                         help='number of workers')
     parser.add_argument('--dataset', default='cifar10', type=str,
-                        choices=['cifar10', 'cifar100', 'cassava'],
+                        choices=['cifar10', 'cassava'],
                         help='dataset name')
     parser.add_argument('--num-labeled', type=int, default=4000,
                         help='number of labeled data')
     parser.add_argument("--expand-labels", action="store_true",
                         help="expand labels to fit eval steps")
     parser.add_argument('--arch', default='wideresnet', type=str,
-                        choices=['wideresnet', 'resnext', 'resnet'],
+                        choices=['wideresnet', 'resnet'],
                         help='dataset name')
     parser.add_argument('--total-steps', default=2**20, type=int,
                         help='number of total steps to run')
@@ -135,12 +135,6 @@ def main():
                                             widen_factor=args.model_width,
                                             dropout=0,
                                             num_classes=args.num_classes)
-        elif args.arch == 'resnext':
-            import models.resnext as models
-            model = models.build_resnext(cardinality=args.model_cardinality,
-                                         depth=args.model_depth,
-                                         width=args.model_width,
-                                         num_classes=args.num_classes)
         elif args.arch == 'resnet':
             import models.resnet as models
             model = models.resnet18(num_classes=args.num_classes)
@@ -187,20 +181,6 @@ def main():
         if args.arch == 'wideresnet':
             args.model_depth = 28
             args.model_width = 2
-        elif args.arch == 'resnext':
-            args.model_cardinality = 4
-            args.model_depth = 28
-            args.model_width = 4
-
-    elif args.dataset == 'cifar100':
-        args.num_classes = 100
-        if args.arch == 'wideresnet':
-            args.model_depth = 28
-            args.model_width = 8
-        elif args.arch == 'resnext':
-            args.model_cardinality = 8
-            args.model_depth = 29
-            args.model_width = 64
     
     elif args.dataset == 'cassava':
         args.num_classes = 5

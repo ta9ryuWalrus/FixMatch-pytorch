@@ -233,7 +233,7 @@ class RandAugmentPC_Cassava(object):
             prob = np.random.uniform(0.2, 0.8)
             if random.random() + prob >= 1:
                 img = op(img, v=self.m, max_v=max_v, bias=bias)
-        img = CutoutAbs(img, int(600*0.5))
+        img = CutoutAbs(img, int(400*0.5))
         return img
 
 class RandAugmentMC_Cassava(object):
@@ -250,5 +250,5 @@ class RandAugmentMC_Cassava(object):
             v = np.random.randint(1, self.m)
             if random.random() < 0.5:
                 img = op(img, v=v, max_v=max_v, bias=bias)
-        img = CutoutAbs(img, int(600*0.5))
+        img = CutoutAbs(img, int(400*0.5))
         return img
