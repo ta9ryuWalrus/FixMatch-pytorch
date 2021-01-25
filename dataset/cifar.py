@@ -65,17 +65,17 @@ def get_cassava(args, root=None):
         transforms.Normalize(mean=normal_mean, std=normal_std)
     ])
 
-    base_dataset = Cassava(train=True, args=args)
+    base_dataset = Cassava(args=args, train=True)
 
     train_labeled_idxs, train_unlabeled_idxs = x_u_split_cassava(args, base_dataset.targets)
 
-    train_labeled_dataset = CassavaSSL(train_labeled_idxs, transform=transform_labeled)
-    train_unlabeled_dataset = CassavaSSL(train_unlabeled_idxs, transform=CassavaFixMatch(mean=normal_mean, std=normal_std))
-    test_dataset = Cassava(train=False, transform=transform_val)
+    train_labeled_dataset = CassavaSSL(args=args, indexs=train_labeled_idxs, transform=transform_labeled)
+    train_unlabeled_dataset = CassavaSSL(args=args, indexs=train_unlabeled_idxs, transform=CassavaFixMatch(mean=normal_mean, std=normal_std))
+    test_dataset = Cassava(args=args, train=False, transform=transform_val)
     return train_labeled_dataset, train_unlabeled_dataset, test_dataset
 
 class Cassava(Dataset):
-    def __init__(self, train=True, transform=None, args):
+    def __init__(self, args, train=True, transform=None):
         # dfは全部で21397件
         df = pd.read_csv('/content/drive/MyDrive/NSSOL/FixMatch-PyTorch/dataset/cassava-leaf-disease-classification/train.csv')
         kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=args.seed)
@@ -210,8 +210,8 @@ class CIFAR10SSL(datasets.CIFAR10):
         return img, target
 
 class CassavaSSL(Cassava):
-    def __init__(self, indexs, transform=None):
-        super(CassavaSSL, self).__init__(transform=transform, train=True)
+    def __init__(self, args, indexs, transform=None):
+        super(CassavaSSL, self).__init__(args=args, transform=transform, train=True)
 
         if indexs is not None:
             self.data = self.data[indexs]
