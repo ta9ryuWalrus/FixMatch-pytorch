@@ -7,7 +7,7 @@ import pandas as pd
 from torchvision import datasets
 from torchvision import transforms
 from torch.utils.data import Dataset
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, StratifiedKFold
 
 from .randaugment import RandAugmentMC, RandAugmentMC_Cassava
 
@@ -65,7 +65,7 @@ def get_cassava(args, root=None):
         transforms.Normalize(mean=normal_mean, std=normal_std)
     ])
 
-    base_dataset = Cassava(train=True)
+    base_dataset = Cassava(train=True, args=args)
 
     train_labeled_idxs, train_unlabeled_idxs = x_u_split_cassava(args, base_dataset.targets)
 
@@ -75,10 +75,18 @@ def get_cassava(args, root=None):
     return train_labeled_dataset, train_unlabeled_dataset, test_dataset
 
 class Cassava(Dataset):
-    def __init__(self, train=True, transform=None):
+    def __init__(self, train=True, transform=None, args):
         # dfは全部で21397件
         df = pd.read_csv('/content/drive/MyDrive/NSSOL/FixMatch-PyTorch/dataset/cassava-leaf-disease-classification/train.csv')
-        train_df, test_df = train_test_split(df, test_size=0.3, stratify=df['label'], random_state=1)
+        kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=args.seed)
+        i = 0
+        for train_idx, test_idx in kf.split(df['image_id'], df['label']):
+          if i == args.fold:
+            train_df = df.iloc[train_idx]
+            test_df = df.iloc[test_idx]
+          i += 1
+
+        #train_df, test_df = train_test_split(df, test_size=0.3, stratify=df['label'], random_state=1)
         if train:
             self.data = np.array(train_df['image_id'])
             self.targets = np.array(train_df['label'])
@@ -127,7 +135,7 @@ def x_u_split(args, labels):
 def x_u_split_cassava(args, labels):
     # unlabeled data: all data (https://github.com/kekmodel/FixMatch-pytorch/issues/10)
     unlabeled_idx = np.array(range(len(labels)))
-    labeled_idx, _ = train_test_split(labels, train_size=0.1, random_state=1)
+    labeled_idx, _ = train_test_split(labels, train_size=0.1, random_state=args.seed)
     np.random.shuffle(labeled_idx)
     return labeled_idx, unlabeled_idx
 

@@ -124,6 +124,8 @@ def main():
                         help="For distributed training: local_rank")
     parser.add_argument('--no-progress', action='store_true',
                         help="don't use progress bar")
+    parser.add_argument('--fold', default=0, type=int,
+                        help='order of 5-fold (0~4)')
 
     args = parser.parse_args()
     global best_acc
