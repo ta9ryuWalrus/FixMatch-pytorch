@@ -77,7 +77,8 @@ def get_cassava(args, root=None):
 class Cassava(Dataset):
     def __init__(self, args, train=True, transform=None):
         # dfは全部で21397件
-        df = pd.read_csv(args.data_dir + '/train.csv')
+        self.data_dir = args.data_dir
+        df = pd.read_csv(self.data_dir + '/train.csv')
         kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=args.seed)
         i = 0
         for train_idx, test_idx in kf.split(df['image_id'], df['label']):
@@ -96,7 +97,7 @@ class Cassava(Dataset):
         self.transform = transform
     
     def __getitem__(self, index):
-        img_path = args.data_dir + '/train_images/' + str(self.data[index])
+        img_path = self.data_dir + '/train_images/' + str(self.data[index])
         label = self.targets[index]
 
         img = Image.open(img_path)
