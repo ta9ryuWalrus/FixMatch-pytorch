@@ -128,7 +128,7 @@ def main():
                         help='order of 5-fold (0~4)')
     parser.add_argument('--data_dir', default='/content/drive/MyDrive/NSSOL/FixMatch-PyTorch/dataset/cassava-leaf-disease-classification', type=str,
                         help='path to the dataset directory')
-    parser.add_argument('--optim', default='adam', type=int, choices=['adam', 'sgd'],
+    parser.add_argument('--optim', default='adam', type=str, choices=['adam', 'sgd'],
                         help='optimizer')
 
     args = parser.parse_args()
