@@ -126,6 +126,8 @@ def main():
                         help="don't use progress bar")
     parser.add_argument('--fold', default=0, type=int,
                         help='order of 5-fold (0~4)')
+    parser.add_argument('--data_dir', default='/content/drive/MyDrive/NSSOL/FixMatch-PyTorch/dataset/cassava-leaf-disease-classification', type=str,
+                        help='path to the dataset directory')
 
     args = parser.parse_args()
     global best_acc
