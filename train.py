@@ -128,6 +128,8 @@ def main():
                         help='order of 5-fold (0~4)')
     parser.add_argument('--data_dir', default='/content/drive/MyDrive/NSSOL/FixMatch-PyTorch/dataset/cassava-leaf-disease-classification', type=str,
                         help='path to the dataset directory')
+    parser.add_argument('--optim', default='adam', type=int, choices=['adam', 'sgd'],
+                        help='optimizer')
 
     args = parser.parse_args()
     global best_acc
@@ -234,9 +236,10 @@ def main():
         {'params': [p for n, p in model.named_parameters() if any(
             nd in n for nd in no_decay)], 'weight_decay': 0.0}
     ]
-    #optimizer = optim.SGD(grouped_parameters, lr=args.lr,
-    #                      momentum=0.9, nesterov=args.nesterov)
-    optimizer = optim.Adam(grouped_parameters, lr=args.lr)
+    if args.optim == 'sgd':
+        optimizer = optim.SGD(grouped_parameters, lr=args.lr, momentum=0.9, nesterov=args.nesterov)
+    elif args.optim == 'adam':
+        optimizer = optim.Adam(grouped_parameters, lr=args.lr)
 
     args.epochs = math.ceil(args.total_steps / args.eval_step)
     scheduler = get_cosine_schedule_with_warmup(
