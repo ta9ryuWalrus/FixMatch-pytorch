@@ -382,7 +382,7 @@ def train(args, labeled_trainloader, unlabeled_trainloader, test_loader,
         #    p_bar.close()
 
             # test 
-            if batch_idx % (2**5) == 0:
+            if (batch_idx % (2**7) == 0) and (batch_idx > 0):
                 if args.use_ema:
                     test_model = ema_model.ema
                 else:
