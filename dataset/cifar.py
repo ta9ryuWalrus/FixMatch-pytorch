@@ -136,7 +136,10 @@ def x_u_split(args, labels):
 def x_u_split_cassava(args, labels):
     # unlabeled data: all data (https://github.com/kekmodel/FixMatch-pytorch/issues/10)
     unlabeled_idx = np.array(range(len(labels)))
-    labeled_idx, _ = train_test_split(labels, train_size=0.1, random_state=args.seed)
+    if args.train_stratify:
+        labeled_idx, _ = train_test_split(labels, train_size=0.1, random_state=args.seed, stratify=labels)
+    else:
+        labeled_idx, _ = train_test_split(labels, train_size=0.1, random_state=args.seed)
     np.random.shuffle(labeled_idx)
     return labeled_idx, unlabeled_idx
 
