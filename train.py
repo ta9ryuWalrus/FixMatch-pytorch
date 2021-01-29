@@ -130,7 +130,7 @@ def main():
                         help='path to the dataset directory')
     parser.add_argument('--optim', default='adam', type=str, choices=['adam', 'sgd'],
                         help='optimizer')
-    parser.add_argument('train_stratify', action='store_true',
+    parser.add_argument('--train_stratify', action='store_true',
                         help='stratify split for label/unlabel')
 
     args = parser.parse_args()
