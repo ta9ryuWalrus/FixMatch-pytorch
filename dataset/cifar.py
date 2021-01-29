@@ -67,10 +67,10 @@ def get_cassava(args, root=None):
 
     base_dataset = Cassava(args=args, train=True)
 
-    train_labeled_idxs, train_unlabeled_idxs = x_u_split_cassava(args, base_dataset.targets)
+    train_labeled_data, train_labeled_targets, train_unlabeled_data, train_unlabeled_targets = x_u_split_cassava(args, base_dataset)
 
-    train_labeled_dataset = CassavaSSL(args=args, indexs=train_labeled_idxs, transform=transform_labeled)
-    train_unlabeled_dataset = CassavaSSL(args=args, indexs=train_unlabeled_idxs, transform=CassavaFixMatch(mean=normal_mean, std=normal_std))
+    train_labeled_dataset = CassavaSSL(args=args, data=train_labeled_data, targets=train_labeled_targets, transform=transform_labeled)
+    train_unlabeled_dataset = CassavaSSL(args=args, data=train_unlabeled_data, targets=train_unlabeled_targets, transform=CassavaFixMatch(mean=normal_mean, std=normal_std))
     test_dataset = Cassava(args=args, train=False, transform=transform_val)
     return train_labeled_dataset, train_unlabeled_dataset, test_dataset
 
@@ -133,15 +133,16 @@ def x_u_split(args, labels):
     np.random.shuffle(labeled_idx)
     return labeled_idx, unlabeled_idx
 
-def x_u_split_cassava(args, labels):
+def x_u_split_cassava(args, dataset):
     # unlabeled data: all data (https://github.com/kekmodel/FixMatch-pytorch/issues/10)
-    unlabeled_idx = np.array(range(len(labels)))
+    unlabeled_data, unlabeled_targets = dataset.data, dataset.targets
+
     if args.train_stratify:
-        labeled_idx, _ = train_test_split(labels, train_size=0.1, random_state=args.seed, stratify=labels)
+        labeled_data, _, labeled_targets, _ = train_test_split(dataset.data, dataset.targets, train_size=0.1, random_state=args.seed, stratify=dataset.targets)
+        print(np.unique(labeled_targets, return_counts=True))
     else:
-        labeled_idx, _ = train_test_split(labels, train_size=0.1, random_state=args.seed)
-    np.random.shuffle(labeled_idx)
-    return labeled_idx, unlabeled_idx
+        labeled_data, _, labeled_targets, _ = train_test_split(dataset.data, dataset.targets, train_size=0.1, random_state=args.seed)
+    return labeled_data, labeled_targets, unlabeled_data, unlabeled_targets
 
 
 class TransformFixMatch(object):
@@ -214,12 +215,10 @@ class CIFAR10SSL(datasets.CIFAR10):
         return img, target
 
 class CassavaSSL(Cassava):
-    def __init__(self, args, indexs, transform=None):
+    def __init__(self, args, data, targets, transform=None):
         super(CassavaSSL, self).__init__(args=args, transform=transform, train=True)
-
-        if indexs is not None:
-            self.data = self.data[indexs]
-            self.targets = self.targets[indexs]
+        self.data = data
+        self.targets = targets
 
 
 DATASET_GETTERS = {'cifar10': get_cifar10,
