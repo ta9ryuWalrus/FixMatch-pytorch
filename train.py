@@ -384,43 +384,38 @@ def train(args, labeled_trainloader, unlabeled_trainloader, test_loader,
         #    p_bar.close()
 
             # test 
-            if (batch_idx % (2**7) == 0) and (batch_idx > 0):
-                if args.use_ema:
-                    test_model = ema_model.ema
-                else:
-                    test_model = model
-
-                if args.local_rank in [-1, 0]:
-                    test_loss, test_acc = test(args, test_loader, test_model, epoch)
-
-                    writer.add_scalar('train/1.train_loss', losses.avg, batch_idx) # epoch -> batch_idx
-                    writer.add_scalar('train/2.train_loss_x', losses_x.avg, batch_idx)
-                    writer.add_scalar('train/3.train_loss_u', losses_u.avg, batch_idx)
-                    writer.add_scalar('train/4.mask', mask_probs.avg, batch_idx) # maskはpseudo labelの確信度がthresholdを超えた割合
-                    writer.add_scalar('test/1.test_acc', test_acc, batch_idx)
-                    writer.add_scalar('test/2.test_loss', test_loss, batch_idx)
-
-                    is_best = test_acc > best_acc
-                    best_acc = max(test_acc, best_acc)
-
-                    model_to_save = model.module if hasattr(model, "module") else model
-                    if args.use_ema:
-                        ema_to_save = ema_model.ema.module if hasattr(
-                            ema_model.ema, "module") else ema_model.ema
-                    save_checkpoint({
-                        'epoch': epoch + 1,
-                        'state_dict': model_to_save.state_dict(),
-                        'ema_state_dict': ema_to_save.state_dict() if args.use_ema else None,
-                        'acc': test_acc,
-                        'best_acc': best_acc,
-                        'optimizer': optimizer.state_dict(),
-                        'scheduler': scheduler.state_dict(),
-                    }, is_best, args.out)
-
-                    test_accs.append(test_acc)
-                    logger.info('Best top-1 acc: {:.2f}'.format(best_acc))
-                    logger.info('Mean top-1 acc: {:.2f}\n'.format(
-                        np.mean(test_accs[-20:])))
+            #if (batch_idx % (2**7) == 0) and (batch_idx > 0):
+        if args.use_ema:
+            test_model = ema_model.ema
+        else:
+            test_model = model
+        if args.local_rank in [-1, 0]:
+            test_loss, test_acc = test(args, test_loader, test_model, epoch)
+            writer.add_scalar('train/1.train_loss', losses.avg, epoch) # epoch -> batch_idx
+            writer.add_scalar('train/2.train_loss_x', losses_x.avg, epoch)
+            writer.add_scalar('train/3.train_loss_u', losses_u.avg, epoch)
+            writer.add_scalar('train/4.mask', mask_probs.avg, epoch) # maskはpseudo labelの確信度がthresholdを超えた割合
+            writer.add_scalar('test/1.test_acc', test_acc, epoch)
+            writer.add_scalar('test/2.test_loss', test_loss, epoch)
+            is_best = test_acc > best_acc
+            best_acc = max(test_acc, best_acc)
+            model_to_save = model.module if hasattr(model, "module") else model
+            if args.use_ema:
+                ema_to_save = ema_model.ema.module if hasattr(
+                    ema_model.ema, "module") else ema_model.ema
+            save_checkpoint({
+                'epoch': epoch + 1,
+                'state_dict': model_to_save.state_dict(),
+                'ema_state_dict': ema_to_save.state_dict() if args.use_ema else None,
+                'acc': test_acc,
+                'best_acc': best_acc,
+                'optimizer': optimizer.state_dict(),
+                'scheduler': scheduler.state_dict(),
+            }, is_best, args.out)
+            test_accs.append(test_acc)
+            logger.info('Best top-1 acc: {:.2f}'.format(best_acc))
+            logger.info('Mean top-1 acc: {:.2f}\n'.format(
+                np.mean(test_accs[-20:])))
         
         if not args.no_progress:
             p_bar.close()
