@@ -380,8 +380,8 @@ def train(args, labeled_trainloader, unlabeled_trainloader, test_loader,
                     mask=mask_probs.avg))
                 p_bar.update()
 
-        #if not args.no_progress:
-        #    p_bar.close()
+        if not args.no_progress:
+            p_bar.close()
 
             # test 
             #if (batch_idx % (2**7) == 0) and (batch_idx > 0):
@@ -417,8 +417,8 @@ def train(args, labeled_trainloader, unlabeled_trainloader, test_loader,
             logger.info('Mean top-1 acc: {:.2f}\n'.format(
                 np.mean(test_accs[-20:])))
         
-        if not args.no_progress:
-            p_bar.close()
+        #if not args.no_progress:
+        #    p_bar.close()
 
     if args.local_rank in [-1, 0]:
         writer.close()
