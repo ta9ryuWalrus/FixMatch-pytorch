@@ -69,19 +69,19 @@ def main():
     parser = argparse.ArgumentParser(description='PyTorch FixMatch Training')
     parser.add_argument('--gpu-id', default='0', type=int,
                         help='id(s) for CUDA_VISIBLE_DEVICES')
-    parser.add_argument('--num-workers', type=int, default=4,
+    parser.add_argument('--num-workers', type=int, default=0,
                         help='number of workers')
-    parser.add_argument('--dataset', default='cifar10', type=str,
+    parser.add_argument('--dataset', default='cassava', type=str,
                         choices=['cifar10', 'cassava'],
                         help='dataset name')
-    parser.add_argument('--num-labeled', type=int, default=4000,
+    parser.add_argument('--num-labeled', type=int, default=1000,
                         help='number of labeled data')
     parser.add_argument("--expand-labels", action="store_true",
                         help="expand labels to fit eval steps")
     parser.add_argument('--arch', default='resnet', type=str,
                         choices=['wideresnet', 'resnet', 'efficientnet'],
                         help='dataset name')
-    parser.add_argument('--total-steps', default=2**20, type=int,
+    parser.add_argument('--total-steps', default=2**10, type=int,
                         help='number of total steps to run')
     parser.add_argument('--eval-step', default=1024, type=int,
                         help='number of eval steps to run')
@@ -132,6 +132,8 @@ def main():
                         help='optimizer')
     parser.add_argument('--train_stratify', action='store_true',
                         help='stratify split for label/unlabel')
+    parser.add_argument('--mode', default='train', choices=['train', 'check'],
+                        help='if check, count the output of trained model')
 
     args = parser.parse_args()
     global best_acc
@@ -183,7 +185,7 @@ def main():
     if args.seed is not None:
         set_seed(args)
 
-    if args.local_rank in [-1, 0]:
+    if (args.local_rank in [-1, 0]) and (args.mode == 'train'):
         os.makedirs(args.out, exist_ok=True)
         writer = SummaryWriter(args.out)
 
@@ -285,9 +287,12 @@ def main():
         f"  Total train batch size = {args.batch_size*args.world_size}")
     logger.info(f"  Total optimization steps = {args.total_steps}")
 
-    model.zero_grad()
-    train(args, labeled_trainloader, unlabeled_trainloader, test_loader,
-          model, optimizer, ema_model, scheduler, writer)
+    if args.mode == 'train':
+        model.zero_grad()
+        train(args, labeled_trainloader, unlabeled_trainloader, test_loader,
+              model, optimizer, ema_model, scheduler, writer)
+    elif args.mode == 'check':
+        check(args, test_loader, model)
 
 
 def train(args, labeled_trainloader, unlabeled_trainloader, test_loader,
@@ -468,6 +473,35 @@ def test(args, test_loader, model, epoch):
     logger.info("top-1 acc: {:.2f}".format(top1.avg))
     logger.info("top-5 acc: {:.2f}".format(top5.avg))
     return losses.avg, top1.avg
+
+def check(args, test_loader, model):
+    if not args.no_progress:
+        test_loader = tqdm(test_loader,
+                           disable=args.local_rank not in [-1, 0])
+
+    preds = np.zeros(5)
+    with torch.no_grad():
+        for batch_idx, (inputs, targets) in enumerate(test_loader):
+            model.eval()
+
+            inputs = inputs.to(args.device)
+            targets = targets.to(args.device)
+            outputs = model(inputs)
+            pred = torch.argmax(outputs, dim=1).to('cpu').detach().numpy().copy()
+            u, counts = np.unique(pred, return_counts=True)
+            for i, j in zip(u, counts):
+                preds[i] += j
+
+            if not args.no_progress:
+                test_loader.set_description("Test Iter: {batch:4}/{iter:4}. ".format(
+                    batch=batch_idx + 1,
+                    iter=len(test_loader),
+                ))
+        if not args.no_progress:
+            test_loader.close()
+    print(preds)
+
+    return preds
 
 
 if __name__ == '__main__':
